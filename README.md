@@ -18,7 +18,7 @@ Both implementations follow the same ETL approach:
    - Calculate revenue (price × sales)
 3. **Load**: Write results to the `revenue` table
 
-- **SQL**: Demonstrates database-native ETL, efficient for BigQuery
+- **SQL**: Demonstrates database-native ETL, efficient for BigQuery (The current version also can run in SQLite)
 - **Python**: Shows structured programming, suitable for Airflow DAGs
 
 ## Project Structure
@@ -123,7 +123,6 @@ Both solutions include validation checks:
 ### Future Enhancements can be considered for production
 
 - Implement incremental loading
-- Add data lineage tracking
 - Create Airflow DAG wrapper
 - Add performance benchmarks
 - Implement data quality / SLI alerts
