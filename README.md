@@ -18,7 +18,7 @@ Both implementations follow the same ETL approach:
    - Calculate revenue (price × sales)
 3. **Load**: Write results to the `revenue` table
 
-- **SQL**: Demonstrates database-native ETL, efficient for BigQuery (The current version also can run in SQLite)
+- **SQL**: Demonstrates database-native ETL, efficient for BigQuery (The current version also can run in **SQLite**)
 - **Python**: Shows structured programming, suitable for Airflow DAGs
 
 ## Project Structure
@@ -117,8 +117,8 @@ pytest tests/test_python_solution.py -v
 Both solutions include validation checks:
 
 1. **Row Count**: Verifies total rows = products × 31 days
-2. **NULL Check**: No NULL values in key columns
-3. **Revenue Calculation**: Validates revenue = price × sales
+2. **NULL Check**: No NULL values in the key columns
+3. **Revenue Calculation**: Validates revenue calculation = price × sales
 
 ### Future Enhancements can be considered for production
 
@@ -128,7 +128,4 @@ Both solutions include validation checks:
 - Implement data quality / SLI alerts
 
 ---
-
-**Note**: This solution is designed for the OTTO interview process and demonstrates production-ready code practices including testing, logging, documentation, and scalability considerations.
-
 Author: Oğuzhan Furkan Aslan
