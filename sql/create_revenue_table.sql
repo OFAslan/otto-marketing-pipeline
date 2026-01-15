@@ -1,14 +1,9 @@
 /*
  * Revenue Table ETL Pipeline
- * 
+ *
  * Purpose: Generate daily revenue data for all products in January 2025
  * Business Requirement: Show revenue for EVERY product on EVERY day, even if not sold
  * 
- * Steps I followed:
- * 1. Generate a date spine for all days in January 2025 using recursive CTE
- * 2. Create cartesian product of all products × all dates
- * 3. Aggregate sales data by product and date
- * 4. Join to calculate revenue (price × sales, or 0 if no sales)
  */
 
 -- Drop and recreate the revenue table for idempotency
@@ -24,8 +19,9 @@ CREATE TABLE revenue (
 
 -- Populate the revenue table
 INSERT INTO revenue (sku_id, date_id, price, sales, revenue)
+
 WITH RECURSIVE 
-    -- Generate all dates in January 2025
+    -- dates in January 2025
     date_spine AS (
         SELECT DATE('2025-01-01') AS date_id
         UNION ALL
@@ -34,7 +30,7 @@ WITH RECURSIVE
         WHERE date_id < DATE('2025-01-31')
     ),
     
-    -- Aggregate sales by product and date
+    -- aggregation step
     daily_sales AS (
         SELECT 
             sku_id,
@@ -45,7 +41,7 @@ WITH RECURSIVE
         GROUP BY sku_id, DATE(orderdate_utc)
     ),
     
-    -- Create cartesian product: all products × all dates
+    -- Cartesian - all products × all dates
     product_date_spine AS (
         SELECT 
             p.sku_id,
@@ -55,7 +51,7 @@ WITH RECURSIVE
         CROSS JOIN date_spine d
     )
 
--- Final join and revenue calculation
+-- Final table
 SELECT 
     pds.sku_id,
     pds.date_id,
@@ -68,7 +64,7 @@ LEFT JOIN daily_sales ds
     AND pds.date_id = ds.date_id
 ORDER BY pds.sku_id, pds.date_id;
 
--- Create indexes for query performance
+-- Creating indexes for better query performance
 CREATE INDEX idx_revenue_sku ON revenue(sku_id);
 CREATE INDEX idx_revenue_date ON revenue(date_id);
 CREATE INDEX idx_revenue_sku_date ON revenue(sku_id, date_id);
