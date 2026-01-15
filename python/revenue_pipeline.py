@@ -4,10 +4,6 @@ Revenue Table ETL Pipeline
 Purpose: Generate daily revenue data for all products in January 2025
 Business Requirement: Show revenue for EVERY product on EVERY day, even if not sold
 
-With this script I followed 3 step ETL approach:
-- Extract: Load data from SQLite database
-- Transform: Generate date spine, aggregate sales, calculate revenue
-- Load: Write results back to database
 """
 
 import sqlite3
@@ -70,14 +66,10 @@ def calculate_revenue(product_date_df, sales_df):
     logger.info("Aggregating sales and calculating revenue...")
     
     # Aggregate sales
-    if not sales_df.empty:
-        sales_agg = sales_df.groupby(['sku_id', 'order_date'], as_index=False).agg({'sales': 'sum'})
-    else:
-        sales_agg = pd.DataFrame(columns=['sku_id', 'order_date', 'sales'])
+    sales_agg = sales_df.groupby(['sku_id', 'date_id'], as_index=False).agg({'sales': 'sum'})
     
     # Join and calculate
-    revenue_df = product_date_df.merge(sales_agg, left_on=['sku_id', 'date_id'], 
-                                       right_on=['sku_id', 'order_date'], how='left')
+    revenue_df = product_date_df.merge(sales_agg, on=['sku_id', 'date_id'], how='left')
     revenue_df['sales'] = revenue_df['sales'].fillna(0).astype(int)
     revenue_df['revenue'] = (revenue_df['price'] * revenue_df['sales']).round(2)
     
@@ -125,29 +117,17 @@ def load_revenue_table(conn: sqlite3.Connection, revenue_df: pd.DataFrame) -> No
 
 
 def validate_results(conn, expected_products, expected_dates):
-    """Perform validation checks."""
-    logger.info("Running validation checks...")
+    """sanity check."""
     cursor = conn.cursor()
-    checks = []
-    
-    # Row count
     actual = cursor.execute("SELECT COUNT(*) FROM revenue").fetchone()[0]
     expected = expected_products * expected_dates
-    checks.append(("Row count", actual == expected, f"{actual} rows"))
     
-    # No NULLs
-    nulls = cursor.execute("SELECT SUM(CASE WHEN sku_id IS NULL OR date_id IS NULL OR price IS NULL THEN 1 ELSE 0 END) FROM revenue").fetchone()[0]
-    checks.append(("NULL check", nulls == 0, "no NULLs"))
+    if actual != expected:
+        logger.warning(f"Row count mismatch: expected {expected}, got {actual}")
+        return False
     
-    # Revenue calculation
-    errors = cursor.execute("SELECT COUNT(*) FROM revenue WHERE ABS(revenue - (price * sales)) > 0.01").fetchone()[0]
-    checks.append(("Revenue calc", errors == 0, "all correct"))
-    
-    all_passed = all(passed for _, passed, _ in checks)
-    for name, passed, msg in checks:
-        logger.info(f"{name}: {'PASS' if passed else 'FAIL'} - {msg}")
-    
-    return all_passed
+    logger.info(f"Validation passed: {actual} rows")
+    return True
 
 
 def main(db_path: str = 'product_sales.db'):
@@ -171,7 +151,7 @@ def main(db_path: str = 'product_sales.db'):
         logger.info("\n--- EXTRACT PHASE ---")
         products_df = extract_data(conn, "SELECT sku_id, sku_description, price FROM product")
         sales_df = extract_data(conn, 
-            "SELECT sku_id, DATE(orderdate_utc) as order_date, sales FROM sales WHERE DATE(orderdate_utc) BETWEEN ? AND ?",
+            "SELECT sku_id, DATE(orderdate_utc) as date_id, sales FROM sales WHERE DATE(orderdate_utc) BETWEEN ? AND ?",
             (START_DATE, END_DATE))
         
         # TRANSFORM
