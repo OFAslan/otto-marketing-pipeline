@@ -53,8 +53,11 @@ cd otto-marketing-pipeline
 #### Run SQL Solution
 
 ```bash
-# Execute the SQL script
+# Execute the SQL script to create the final table in db
 sqlite3 product_sales.db < sql/create_revenue_table.sql
+
+# Check if the final table is correctly created expected 31000 as result.
+sqlite3 product_sales.db "SELECT COUNT(*) FROM revenue;"
 
 #### Run Python Solution
 
@@ -92,18 +95,9 @@ pytest tests/test_python_solution.py -v
 
 ## Data Quality
 
-Both solutions include validation checks:
+Only python solution has a data quality check. In production, these kind of checks can be added to airflow as a DAG task that fails the pipeline if checks don't pass.
 
-1. **Row Count**: Verifies total rows = products × 31 days
-2. **NULL Check**: No NULL values in the key columns
-3. **Revenue Calculation**: Validates revenue calculation = price × sales
-
-### Future Enhancements can be considered for production
-
-- Implement incremental loading
-- Create Airflow DAG wrapper
-- Add performance benchmarks
-- Implement data quality / SLI alerts
+**Row Count**: Verifies total rows = products × 31 days
 
 ---
 Author: Oğuzhan Furkan Aslan
